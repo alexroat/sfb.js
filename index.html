@@ -18,12 +18,35 @@ function vlNotEmpty()
 }
 
 
+function cvlLenLess(x)
+{
+    return function()
+    {
+        if (this.value().length>=x)
+            return "length must be less than "+x;
+    }
+}
+
+
+
 function vlPropagate()
 {
     $(this).children("fieldset").each(function(){this.validate();});
 }
 
-
+function cvlCascade()
+{
+    var a=arguments;
+    return function()
+    {
+        for (i in a)
+        {
+            var r =a[i].apply(this);
+            if (r)
+                return r;
+        }
+    }
+}
 
 function jobj(def,x)
 {
@@ -140,26 +163,26 @@ $(function(){
         test:1,
         type:"multi",
         fields:[
-            {label:"Nome",key:"nome",validator:vlNotEmpty},
-            {label:"Cognome",key:"cognome"},
-            {label:"Formazione",
-                key:"formazione",
+            {label:"Name",key:"name",validator:cvlCascade(vlNotEmpty,cvlLenLess(7))},
+            {label:"Surname",key:"surname"},
+            {label:"Education",
+                key:"education",
                 type:"dyn",
                 def:{
                         label:"m",
                         type:"multi",
-                        fields:[{label:"A",key:"a",type:"select",values:{"ciao":1,"miao":2}},
+                        fields:[{label:"A",key:"a",type:"select",values:{"uno":1,"due":2}},
                                 {label:"B",key:"b",validator:vlNotEmpty}]
                     }
             },
-            {label:"Competenze tecniche",type:"textarea",key:"competenzetecniche"}
+            {label:"Competenze tecniche",type:"textarea",key:"techskill"}
         ]
     };
 
     var f=$("<form/>").appendTo("body");
 
 
-    obj={nome:"Ale",cognome:"Roat",formazione:[{a:1,b:"mona"}],competenzetecniche:"molte"};
+    obj={name:"Alessandro",surname:"Roat",education:[{a:1,b:"fun"}],techskill:"some"};
 
 
     jobj(def,obj).appendTo(f);
