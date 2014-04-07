@@ -1,0 +1,180 @@
+		
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+
+
+<script type="text/javascript">
+
+//funzioni di validazione
+function vlNotEmpty()
+{
+    if (!this.value())
+        return "value cannot be empty";
+}
+
+
+function vlPropagate()
+{
+    $(this).children("fieldset").each(function(){this.validate();});
+}
+
+
+
+function jobj(def,x)
+{
+    var d=$("<fieldset/>");
+    $("<legend/>").text(def.label).appendTo(d);
+    var dd=d[0];
+   
+    dd.value=function(){return dd.inp.val();};
+    dd.validate=function(){
+        d.children(".vlMessage").remove();
+        if (def.validator)
+        {       
+            var r=def.validator.apply(dd);
+            if (r)
+                $("<div/>",{class:"vlMessage"}).text(r).appendTo(d);
+        }
+    };
+    dd.root=function(){if (dd.parent) return dd.parent.root(); return dd;};
+    dd.def=def;
+
+    //crea un campo semplice
+    var fn={
+    text:function()
+    {
+        dd.inp=$("<input/>").appendTo(d);
+        dd.inp.val(x);
+        dd.inp.on("change input",dd.validate);
+    },
+    textarea:function()
+    {
+        dd.inp=$("<textarea/>").appendTo(d);
+        dd.inp.on("change input",dd.validate);
+    },
+    select:function()
+    {
+        dd.inp=$("<select/>").appendTo(d);
+        for (k in def.values)
+            $("<option/>",{value:def.values[k]}).text(k).appendTo(dd.inp);
+    },
+    multi:function()
+    {
+        x=x?x:{};
+        for (i in def.fields)
+        {
+            var cdef=def.fields[i];
+            var child=jobj(cdef,x[cdef.key]).appendTo(d);
+            child[0].parent=d;
+        }
+        dd.value=function(){
+            var v={};
+            d.children("fieldset").each(function(){
+                var c=$(this)[0];
+                v[c.def.key]=c.value();
+             });
+            return v;
+        };
+        //dd.def.validator=dd.def.validator?dd.def.validator:vlPropagate;
+    },
+    dyn:function()
+    {
+        var btnadd=$("<button/>").text("add").appendTo(d);
+        var addChild=function(cx){   
+            var child=jobj(def.def,cx).appendTo(d);
+            child[0].parent=d;
+            var btndel=$("<button/>").text("del").prependTo(child);
+            btndel.click(function(){
+                child.remove();
+            });
+            return false;
+        };
+        btnadd.click(addChild);
+        dd.value=function(){
+            var v=[];
+            d.children("fieldset").each(function(){
+                var c=$(this)[0];
+                v.push(c.value());
+             });
+            return v;
+        };
+        x=x?x:[];
+        for (i in x)
+            addChild(x[i]);
+        //dd.def.validator=dd.def.validator?dd.def.validator:vlPropagate;
+    }
+    };
+
+    //esegue il gestore corretto
+    fn[def.type in fn?def.type:"text"]();
+
+    if (def.test)
+    {
+        var btntest=$("<button/>").text("test").prependTo(d);
+        btntest.click(function(){
+            console.log(JSON.stringify(dd.value()));
+            return false;
+        });
+    }    
+
+
+    //esegue la prima validazione
+    dd.validate();
+
+    return d;
+}
+
+
+
+
+
+$(function(){
+
+    var def={
+        label:"test",
+        test:1,
+        type:"multi",
+        fields:[
+            {label:"Nome",key:"nome",validator:vlNotEmpty},
+            {label:"Cognome",key:"cognome"},
+            {label:"Formazione",
+                key:"formazione",
+                type:"dyn",
+                def:{
+                        label:"m",
+                        type:"multi",
+                        fields:[{label:"A",key:"a",type:"select",values:{"ciao":1,"miao":2}},
+                                {label:"B",key:"b",validator:vlNotEmpty}]
+                    }
+            },
+            {label:"Competenze tecniche",type:"textarea",key:"competenzetecniche"}
+        ]
+    };
+
+    var f=$("<form/>").appendTo("body");
+
+
+    obj={nome:"Ale",cognome:"Roat",formazione:[{a:1,b:"mona"}],competenzetecniche:"molte"};
+
+
+    jobj(def,obj).appendTo(f);
+
+
+});
+
+
+
+
+</script>
+</head>
+<body>
+
+
+
+</body>
+</html>
