@@ -78,11 +78,13 @@ function jobj(def,x)
     textarea:function()
     {
         dd.inp=$("<textarea/>").appendTo(d);
+        dd.inp.val(x);
         dd.inp.on("change input",dd.validate);
     },
     select:function()
     {
         dd.inp=$("<select/>").appendTo(d);
+        dd.inp.val(x);
         for (k in def.values)
             $("<option/>",{value:def.values[k]}).text(k).appendTo(dd.inp);
     },
@@ -182,7 +184,7 @@ $(function(){
     var f=$("<form/>").appendTo("body");
 
 
-    obj={name:"Alessandro",surname:"Roat",education:[{a:1,b:"fun"}],techskill:"some"};
+    obj={name:"Alessandro",surname:"Roat",education:[{a:2,b:"fun"}],techskill:"some"};
 
 
     jobj(def,obj).appendTo(f);
