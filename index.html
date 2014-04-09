@@ -13,7 +13,7 @@
 //funzioni di validazione
 function vlNotEmpty()
 {
-    if (!this.value())
+    if (!this.get())
         return "value cannot be empty";
 }
 
@@ -22,7 +22,7 @@ function cvlLenLess(x)
 {
     return function()
     {
-        if (this.value().length>=x)
+        if (this.get().length>=x)
             return "length must be less than "+x;
     }
 }
@@ -39,7 +39,7 @@ function cvlCascade()
     var a=arguments;
     return function()
     {
-        for (i in a)
+        for (var i=0;i<a.length;i++)
         {
             var r =a[i].apply(this);
             if (r)
@@ -48,90 +48,106 @@ function cvlCascade()
     }
 }
 
-function jobj(def,x)
+function jobj(def)
 {
     var d=$("<fieldset/>");
     $("<legend/>").text(def.label).appendTo(d);
     var dd=d[0];
-   
-    dd.value=function(){return dd.inp.val();};
+
+    d.css({"display":"block"});
+    if (dd.css)
+        d.css(dd.css);
+  
+
+    
     dd.validate=function(){
         d.children(".vlMessage").remove();
         if (def.validator)
         {       
             var r=def.validator.apply(dd);
             if (r)
-                $("<div/>",{class:"vlMessage"}).text(r).appendTo(d);
+                $("<div/>",{class:"vlMessage"}).text(r).css({background:"yellow"}).appendTo(d);
         }
     };
     dd.root=function(){if (dd.parent) return dd.parent.root(); return dd;};
     dd.def=def;
 
-    //crea un campo semplice
+    dd.get=function(){return dd.inp.val();};
+    dd.set=function(x){dd.inp.val(x);};
+
     var fn={
     text:function()
     {
         dd.inp=$("<input/>").appendTo(d);
-        dd.inp.val(x);
         dd.inp.on("change input",dd.validate);
     },
     textarea:function()
     {
         dd.inp=$("<textarea/>").appendTo(d);
-        dd.inp.val(x);
         dd.inp.on("change input",dd.validate);
     },
     select:function()
     {
         dd.inp=$("<select/>").appendTo(d);
-        dd.inp.val(x);
-        for (k in def.values)
-            $("<option/>",{value:def.values[k]}).text(k).appendTo(dd.inp);
+        for (var k in def.values)
+            $("<option/>",{value:k}).text(def.values[k]).appendTo(dd.inp);
+        dd.set=function(x){console.log(x);dd.inp.val(x);};
     },
-    multi:function()
+    obj:function()
     {
-        x=x?x:{};
-        for (i in def.fields)
+        dd.map={};
+        for (var i in def.fields)
         {
             var cdef=def.fields[i];
-            var child=jobj(cdef,x[cdef.key]).appendTo(d);
-            child[0].parent=d;
+            var child=jobj(cdef).appendTo(d);
+            dd.map[cdef.key]=child[0];
+            child[0].parent=dd;
         }
-        dd.value=function(){
+        dd.get=function(){
             var v={};
             d.children("fieldset").each(function(){
                 var c=$(this)[0];
-                v[c.def.key]=c.value();
+                v[c.def.key]=c.get();
              });
             return v;
         };
-        //dd.def.validator=dd.def.validator?dd.def.validator:vlPropagate;
+        dd.set=function(x){
+            for (var i in def.fields)
+            {
+                var k=def.fields[i].key;
+                dd.map[k].set(x[k]);
+            }
+        };
     },
-    dyn:function()
+    list:function()
     {
-        var btnadd=$("<button/>").text("add").appendTo(d);
-        var addChild=function(cx){   
-            var child=jobj(def.def,cx).appendTo(d);
-            child[0].parent=d;
-            var btndel=$("<button/>").text("del").prependTo(child);
+        var btnadd=$("<button/>").text("+").css({display:"block"}).appendTo(d);
+        var addChild=function(){   
+            var child=jobj(def.def).appendTo(d);
+            child[0].parent=dd;
+            var btndel=$("<button/>").text("X").prependTo(child);
             btndel.click(function(){
                 child.remove();
             });
-            return false;
+            return child[0];
         };
-        btnadd.click(addChild);
-        dd.value=function(){
+        btnadd.click(function(){addChild();return false;});
+        dd.get=function(){
             var v=[];
             d.children("fieldset").each(function(){
                 var c=$(this)[0];
-                v.push(c.value());
+                v.push(c.get());
              });
             return v;
         };
-        x=x?x:[];
-        for (i in x)
-            addChild(x[i]);
-        //dd.def.validator=dd.def.validator?dd.def.validator:vlPropagate;
+        dd.set=function(x){
+            d.children("fieldset").remove();
+            for (var i in x)
+            {
+                var child=addChild();
+                child.set(x[i]);
+            }
+        };
     }
     };
 
@@ -142,7 +158,7 @@ function jobj(def,x)
     {
         var btntest=$("<button/>").text("test").prependTo(d);
         btntest.click(function(){
-            console.log(JSON.stringify(dd.value()));
+            console.log(JSON.stringify(dd.get()));
             return false;
         });
     }    
@@ -163,31 +179,32 @@ $(function(){
     var def={
         label:"test",
         test:1,
-        type:"multi",
+        type:"obj",
         fields:[
             {label:"Name",key:"name",validator:cvlCascade(vlNotEmpty,cvlLenLess(7))},
             {label:"Surname",key:"surname"},
             {label:"Education",
                 key:"education",
-                type:"dyn",
+                type:"list",
                 def:{
                         label:"m",
-                        type:"multi",
-                        fields:[{label:"A",key:"a",type:"select",values:{"uno":1,"due":2}},
+                        type:"obj",
+                        fields:[{label:"A",key:"a",type:"select",values:{1:"uno",2:"due"}},
                                 {label:"B",key:"b",validator:vlNotEmpty}]
                     }
             },
-            {label:"Competenze tecniche",type:"textarea",key:"techskill"}
+            {label:"Techncal skill",type:"textarea",key:"techskill"}
         ]
     };
 
     var f=$("<form/>").appendTo("body");
 
 
-    obj={name:"Alessandro",surname:"Roat",education:[{a:2,b:"fun"}],techskill:"some"};
+    obj={name:"Alessandro",surname:"Roat",education:[{a:2,b:"fun"},{a:1,b:"yeah"}],techskill:"some"};
 
 
-    jobj(def,obj).appendTo(f);
+    var j = jobj(def).appendTo(f);
+    j[0].set(obj);
 
 
 });
