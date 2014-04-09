@@ -72,6 +72,7 @@ function jobj(def)
     dd.root=function(){if (dd.parent) return dd.parent.root(); return dd;};
     dd.def=def;
 
+    dd.init=function(){};
     dd.get=function(){return dd.inp.val();};
     dd.set=function(x){dd.inp.val(x);};
 
@@ -89,8 +90,13 @@ function jobj(def)
     select:function()
     {
         dd.inp=$("<select/>").appendTo(d);
-        for (var k in def.values)
-            $("<option/>",{value:k}).text(def.values[k]).appendTo(dd.inp);
+        dd.init=function()
+        {
+            dd.inp.empty();
+            def.values=typeof(def.values)=="function"?def.values():def.values;
+            for (var k in def.values)
+                $("<option/>",{value:k}).text(def.values[k]).appendTo(dd.inp);
+        }
         dd.set=function(x){console.log(x);dd.inp.val(x);};
     },
     obj:function()
@@ -165,6 +171,7 @@ function jobj(def)
 
 
     //esegue la prima validazione
+    dd.init();
     dd.validate();
 
     return d;
@@ -189,11 +196,11 @@ $(function(){
                 def:{
                         label:"m",
                         type:"obj",
-                        fields:[{label:"A",key:"a",type:"select",values:{1:"uno",2:"due"}},
+                        fields:[{label:"A",key:"a",type:"select",values:function(){return {1:"uno",2:"due"};}},
                                 {label:"B",key:"b",validator:vlNotEmpty}]
                     }
             },
-            {label:"Techncal skill",type:"textarea",key:"techskill"}
+            {label:"Competenze tecniche",type:"textarea",key:"techskill"}
         ]
     };
 
