@@ -48,7 +48,7 @@ function cvlCascade()
     }
 }
 
-function jobj(def)
+function jobj(def,parent)
 {
     var d=$("<fieldset/>");
     $("<legend/>").text(def.label).appendTo(d);
@@ -71,7 +71,7 @@ function jobj(def)
     };
     dd.root=function(){if (dd.parent) return dd.parent.root(); return dd;};
     dd.def=def;
-
+    dd.parent=parent;
     dd.init=function(){};
     dd.get=function(){return dd.inp.val();};
     dd.set=function(x){dd.inp.val(x);};
@@ -105,9 +105,8 @@ function jobj(def)
         for (var i in def.fields)
         {
             var cdef=def.fields[i];
-            var child=jobj(cdef).appendTo(d);
+            var child=jobj(cdef,dd).appendTo(d);
             dd.map[cdef.key]=child[0];
-            child[0].parent=dd;
         }
         dd.get=function(){
             var v={};
@@ -129,8 +128,7 @@ function jobj(def)
     {
         var btnadd=$("<button/>").text("+").css({display:"block"}).appendTo(d);
         var addChild=function(){   
-            var child=jobj(def.def).appendTo(d);
-            child[0].parent=dd;
+            var child=jobj(def.def,dd).appendTo(d);
             var btndel=$("<button/>").text("X").prependTo(child);
             btndel.click(function(){
                 child.remove();
@@ -171,8 +169,8 @@ function jobj(def)
 
 
     //esegue la prima validazione
-    dd.init();
-    dd.validate();
+    dd.init.apply(dd);
+    dd.validate.apply(dd);
 
     return d;
 }
@@ -196,7 +194,9 @@ $(function(){
                 def:{
                         label:"m",
                         type:"obj",
-                        fields:[{label:"A",key:"a",type:"select",values:function(){return {1:"uno",2:"due"};}},
+                        fields:[{label:"A",key:"a1",type:"select",values:function(){ggg=this;console.log(this.parent.map);return {1:"unoq",2:"dueq"};}},
+                                {label:"A",key:"a2",type:"select",values:function(){return {1:"uno",2:"due"};}},
+                                {label:"A",key:"a3",type:"select",values:function(){return {1:"uno",2:"due"};}},
                                 {label:"B",key:"b",validator:vlNotEmpty}]
                     }
             },
