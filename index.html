@@ -93,7 +93,7 @@ function jobj(def)
         dd.init=function()
         {
             dd.inp.empty();
-            def.values=typeof(def.values)=="function"?def.values():def.values;
+            def.values=typeof(def.values)=="function"?def.values.apply(dd):def.values;
             for (var k in def.values)
                 $("<option/>",{value:k}).text(def.values[k]).appendTo(dd.inp);
         }
